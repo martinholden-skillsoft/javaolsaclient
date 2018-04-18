@@ -1,0 +1,174 @@
+<?xml version="1.0"?>
+<!--
+====================================================================== 
+OLSA Axis 1.x Client  build configuration file                   
+======================================================================
+-->
+<project name="OLSA Axis 1.x Client" basedir="." default="build">
+  <description>
+    SkillSoft OLSA Axis 1.x Client
+  </description>
+
+  <!-- Include external properties files-->
+  <property file="build.properties" />
+  <property file="${project.config}/olsa_user.properties" />
+
+  <!-- Compile-time classpath: for "compile" target, or,  -->
+  <!-- all code to be shipped in the finished product     -->
+  <path id="source.compile.classpath">
+    <pathelement path="${project.base}" />
+    <pathelement path="${axis.jar}" />
+    <pathelement path="${axis-ant.jar}" />
+    <pathelement path="${jaxrpc.jar}" />
+    <pathelement path="${log4j.jar}" />
+    <pathelement path="${dom4j.jar}" />
+    <pathelement path="${saaj.jar}" />
+    <pathelement path="${wss4j.jar}" />
+    <pathelement path="${junit.jar}" />
+	<pathelement path="${activation.jar}" />
+  </path>
+
+  <!-- Test execution time classpath, including the      -->
+  <!-- source and test compile classpaths, and JDBC.     -->
+  <path id="run.classpath">
+    <pathelement path="${project.classes}" />
+    <pathelement path="${project.classes.config}" />
+    <path refid="source.compile.classpath" />
+    <pathelement path="${commons-logging.jar}" />
+    <pathelement path="${commons-discovery.jar}" />
+    <pathelement path="${xmlsec.jar}" />
+    <pathelement path="${opensaml.jar}" />
+    <pathelement path="${wsdl4j.jar}" />
+    <pathelement path="${activation.jar}" />
+  </path>
+
+  <taskdef resource="axis-tasks.properties" classpathref="run.classpath" />
+
+  <!--
+  ================================= 
+  target: build
+  Build the OLSA Axis 1.x Client             
+  =================================
+  -->
+  <target name="build" description="Builds everything (after 'clean'ing)" depends="setup, generate-client-stubs, compile, build-jar">
+    <tstamp>
+      <format property="build.time" pattern="MM/dd/yyyy hh:mm:ss.SSS a z" />
+    </tstamp>
+    <echo level="info" message="${build.time}" />
+  </target>
+
+  <!--
+  ================================= 
+  target: prepare
+  Prepare peforms prerequisites prior to build              
+  =================================
+  -->
+  <target name="prepare" description="Prepare for build">
+    <mkdir dir="${project.classes}" />
+    <mkdir dir="${project.outlib}" />
+	<mkdir dir="${olsaclient.lib}" />
+  </target>
+
+  <!--
+  ================================= 
+  target: setup
+  Setup peforms prerequisites prior to generating the client, including converting the project.namespacepath to a namespace
+  =================================
+  -->
+  <target name="setup" description="Setup for build">
+    <echo level="info" message="Deleting generated source folder: ${project.source}" />
+    <delete dir="${project.source}" />
+
+    <mkdir dir="${project.classes}" />
+
+    <pathconvert property="project.namespace" dirsep=".">
+      <map from="${basedir}/" to=''/>
+      <path location="${project.namespacepath}"/>
+    </pathconvert>
+
+    <echo level="info" message="Project namespace: ${project.namespace}"/>
+
+    <echo level="info" message="Copying Templates from : ${project.templates}"/>
+    <filter token="namespace" value="${project.namespace}"/>
+    <copy todir="${project.source}/${project.namespacepath}" filtering="true">
+      <fileset dir="${project.templates}"/>
+    </copy>
+
+  </target>
+
+  <!--
+  ================================= 
+  target: generate-client-stubs
+  Generate the client stubs for the OLSA web service. This target uses Axis 1.x to generate the stubs.       
+  =================================
+  -->
+  <target name="generate-client-stubs" depends="setup">
+    <echo level="info" message="Generating AXIS1.x Client using wsdl2java. Namespace: ${project.namespace}" />
+    <axis-wsdl2java output="${project.source}" verbose="false" testcase="true" url="${endpoint}?wsdl" wraparrays="true">
+      <mapping namespace="http://www.skillsoft.com/services/olsa_v1_0/" package="${project.namespace}" />
+      <mapping namespace="http://www.itpolecat.com/mmlsexport/" package="${project.namespace}.mmls" />
+      <mapping namespace="http://purl.org/dc/elements/1.1/" package="${project.namespace}.dc" />
+    </axis-wsdl2java>
+
+    <replace file="${project.source}/${project.namespacepath}/OlsaSoapBindingStub.java" token="static org.apache.axis.description.OperationDesc" value="static protected org.apache.axis.description.OperationDesc" />
+    <replace file="${project.source}/${project.namespacepath}/OlsaServiceLocator.java" token="${project.namespace}.OlsaSoapBindingStub" value="${project.namespace}.OlsaClientStub" />
+  </target>
+
+  <!--
+  ================================= 
+  target: clean
+  Delete client classes         
+  =================================
+  -->
+  <target name="clean">
+    <delete dir="${project.classes}" />
+	<delete dir="${project.outlib}" />
+	<delete dir="${olsaclient.lib}" />
+  </target>
+
+  <!--
+  ================================= 
+  target: compile
+  Compile the sample code         
+  =================================
+  -->
+  <target name="compile" depends="clean, prepare">
+    <javac includeantruntime="false" srcdir="${project.source}" destdir="${project.classes}" debug="on">
+      <classpath>
+        <path refid="source.compile.classpath" />
+      </classpath>
+    </javac>
+    <copy file="${project.config}/log4j.properties" toDir="${project.classes.config}" />
+  </target>
+
+   <!--
+  ================================= 
+  target: build-jar
+  Create the JAR file       
+  =================================
+  --> 
+  <target name="build-jar">
+    <jar destfile="${project.outlib}/${project.packagename}"
+       basedir="${project.classes}">
+    </jar>
+	<copy file="${project.outlib}/${project.packagename}" toDir="${olsaclient.lib}" />
+  </target>
+
+  <!--
+  ================================= 
+  target: generate-javadocs
+  Generates the Java Docs
+  ================================= -->
+  <target name="generate-javadocs" depends="compile" description="build the java docs for the source code">
+    <property name="docs.javadocs" value="docs/javadocs" />
+    <property name="src.dir" value="./src" />
+    <javadoc destdir="${docs.javadocs}" classpathref="source.compile.classpath" packagenames="${project.namespacepath}" sourcepath="${src.dir}" Author="true" version="true" Use="true" noindex="true" Windowtitle="OLSA Client" Doctitle="OLSA Client" bottom="Copyright © 2018 SkillSoft Corporation. All rights reserved.">
+      <arg line="-private" />
+      <fileset dir="${src.dir}">
+        <include name="**/*.java" />
+      </fileset>
+    </javadoc>
+  </target>
+
+</project>
+

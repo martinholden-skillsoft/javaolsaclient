@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+<!-- ====================================================================== 
+     OLSA Client Toolkit build configuration file                   
+     ====================================================================== -->
+<project name="OLSA Web Service Client Use" basedir="." default="build">
+    <description>
+            SkillSoft OLSA Web Services Client Use
+    </description>
+    <property file="build.properties" />
+    <property file="config/ctk.properties" />
+
+    <!-- Compile-time classpath: for "compile" target, or,  -->
+    <!-- all code to be shipped in the finished product     -->
+    <path id="source.compile.classpath">
+        <pathelement path="${project.base}" />
+        <pathelement path="${axis.jar}" />
+        <pathelement path="${axis-ant.jar}" />
+        <pathelement path="${jaxrpc.jar}" />
+        <pathelement path="${log4j.jar}" />
+        <pathelement path="${dom4j.jar}" />
+        <pathelement path="${saaj.jar}" />
+        <pathelement path="${olsa.jar}" />
+        <pathelement path="${wss4j.jar}" />
+        <pathelement path="${junit.jar}" />
+		<pathelement path="${skillsoft-olsa-client.jar}" />
+    </path>
+
+    <!-- Test execution time classpath, including the      -->
+    <!-- source and test compile classpaths, and JDBC.     -->
+    <path id="run.classpath">
+        <pathelement path="${project.classes}" />
+        <pathelement path="${project.classes.config}" />
+        <path refid="source.compile.classpath" />
+        <pathelement path="${commons-logging.jar}" />
+        <pathelement path="${commons-discovery.jar}" />
+        <pathelement path="${xmlsec.jar}" />
+        <pathelement path="${opensaml.jar}" />
+        <pathelement path="${wsdl4j.jar}" />
+        <pathelement path="${activation.jar}" />
+        <pathelement path="${mail.jar}" />
+		<pathelement path="${skillsoft-olsa-client.jar}" />
+    </path>
+
+    <taskdef resource="axis-tasks.properties" classpathref="run.classpath" />
+
+    <!-- ================================= 
+          target: build
+          Build the OLSA Client Toolkit              
+         ================================= -->
+    <target name="build" description="Builds everything (after 'clean'ing)" depends="compile">
+        <tstamp>
+            <format property="build.time" pattern="MM/dd/yyyy hh:mm:ss.SSS a z" />
+        </tstamp>
+        <echo level="info" message="${build.time}" />
+    </target>
+
+    <!-- ================================= 
+          target: prepare
+          Prepare peforms prerequisites prior to build              
+         ================================= -->
+    <target name="prepare" description="Prepare for build">
+        <mkdir dir="${project.classes}" />
+    </target>
+
+    <!-- ================================= 
+          target: clean
+          Delete client classes         
+         ================================= -->
+    <target name="clean">
+        <delete dir="${project.classes}" />
+    </target>
+
+    <!-- ================================= 
+          target: compile
+          Compile the sample code         
+         ================================= -->
+    <target name="compile" depends="clean, prepare">
+        <javac includeantruntime="false" srcdir="${project.source}" destdir="${project.classes}" debug="on">
+            <classpath>
+                <path refid="source.compile.classpath" />
+            </classpath>
+        </javac>
+        <copy file="${project.config}/log4j.properties" toDir="${project.classes.config}" />
+    </target>
+
+    <target name="testgetuserclient" depends="compile" description="Get User Details">
+        <java classname="example.usermanagement.GetUserDetailsExtendedExample" fork="yes">
+            <jvmarg value="-Daxis.ClientConfigFile=config/client_deploy.wsdd" />
+            <jvmarg value="-Dexample.usermanagement.GetUserDetailsExtendedExample.username=${example.usermanagement.GetUserDetailsExtendedExample.username}" />
+			<jvmarg value="-Dexample.usermanagement.GetUserDetailsExtendedExample.repeat=${example.usermanagement.GetUserDetailsExtendedExample.repeat}" />
+            <classpath>
+                <path refid="run.classpath" />
+            </classpath>
+        </java>
+    </target>
+	
+	<target name="testcreateuserclient" depends="compile" description="Get User Details">
+        <java classname="example.usermanagement.CreateUserExtendedExample" fork="yes">
+            <jvmarg value="-Daxis.ClientConfigFile=config/client_deploy.wsdd" />
+            <jvmarg value="-Dexample.usermanagement.CreateUserExtendedExample.username=${example.usermanagement.CreateUserExtendedExample.username}" />
+			<jvmarg value="-Dexample.usermanagement.CreateUserExtendedExample.orgCode=${example.usermanagement.CreateUserExtendedExample.orgCode}" />
+			<jvmarg value="-Dexample.usermanagement.CreateUserExtendedExample.repeat=${example.usermanagement.CreateUserExtendedExample.repeat}" />
+            <classpath>
+                <path refid="run.classpath" />
+            </classpath>
+        </java>
+    </target>
+	
+</project>
+
